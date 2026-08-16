@@ -16,11 +16,19 @@ graph workloads without pretending to be a full LDBC SNB run):
   (:Person)-[:PURCHASED {ts, amount}]->(:Product)
   (:Product)-[:SIMILAR_TO]->(:Product)
 
-Sizing target: ~5,000 Person nodes, ~2,000 Product nodes, ~40,000 edges total.
-On disk this is well under 50 MB as CSV / well under 1 GB as a loaded graph
-with indexes, leaving headroom on the free tier. Change N_PERSONS / N_PRODUCTS
-below to rescale -- but re-check against the smallest tier's disk limit
-before you do (see README "Fairness & sizing").
+Sizing target: ~7,000 Person nodes, ~2,800 Product nodes, ~56,000 edges
+total. On disk this is well under 50 MB as CSV / well under 1 GB as a loaded
+graph with indexes, leaving headroom on the free tier -- FalkorDB Cloud's
+100 MB in-memory free tier is the tightest constraint here, not CognoDB's,
+so that's the one to re-check against. A 2.5x scale-up over the original
+5,000/2,000 sizing was tried and rejected: it pinned Neo4j Community
+(256 MB cap) at ~100% memory for the entire bulk load with heavy block I/O
+(thrashing, not real progress) and made Memgraph's bulk load and multi-hop
+queries 6-7x slower for only 2.5x more data -- a sign of real memory
+pressure, not proportional scaling. Change N_PERSONS / N_PRODUCTS below to
+rescale -- but re-check against the smallest tier's limit before you do
+(see README "Fairness & sizing"), and remember to update the id ranges in
+benchmarks/workloads.py's `_rand_person_id`/`_rand_product_id` to match.
 
 Output: data/dataset/{persons.csv, products.csv, follows.csv, purchased.csv,
 similar_to.csv} -- plain CSVs so every database's native bulk-import tool
@@ -33,11 +41,11 @@ import os
 
 random.seed(1337)  # fixed seed -> byte-identical dataset across runs/reviewers
 
-N_PERSONS = 5_000
-N_PRODUCTS = 2_000
-N_FOLLOWS = 20_000
-N_PURCHASES = 15_000
-N_SIMILAR = 5_000
+N_PERSONS = 7_000
+N_PRODUCTS = 2_800
+N_FOLLOWS = 28_000
+N_PURCHASES = 21_000
+N_SIMILAR = 7_000
 
 COUNTRIES = ["IN", "US", "GB", "DE", "SG", "BR", "NG", "AU", "CA", "FR"]
 CATEGORIES = ["electronics", "books", "apparel", "home", "sports", "toys", "grocery", "beauty"]

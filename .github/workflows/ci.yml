@@ -28,7 +28,7 @@ jobs:
         run: |
           python data/generate_dataset.py
           test -f data/dataset/persons.csv
-          test "$(wc -l < data/dataset/persons.csv)" -eq 5001
+          test "$(wc -l < data/dataset/persons.csv)" -eq 7001
       - name: Report generator smoke test (with synthetic results)
         run: |
           mkdir -p results/raw

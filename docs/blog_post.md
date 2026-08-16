@@ -44,10 +44,12 @@ we say so instead of guessing.
 
 ## What we actually measured
 
-Five databases, one dataset (5,000 people, 2,000 products, ~40,000
+Five databases, one dataset (7,000 people, 2,800 products, ~56,000
 relationships — big enough to have real hub nodes and skewed degree
-distributions, small enough to fit in 256 MB of RAM with room to spare),
-nine queries run identically everywhere:
+distributions, small enough to fit inside FalkorDB's real 100 MB free-tier
+cap with room to spare, which turned out to be the tightest constraint in
+the whole comparison, not CognoDB's), nine queries run identically
+everywhere:
 
 - a point lookup,
 - a 1-hop and a 2-hop traversal ("friends of friends" — the query graph
@@ -66,30 +68,35 @@ loaded" are different questions with different answers.
 
 The self-hosted engines won on raw query speed, and that's not a surprise
 once you remember what "free tier" is buying on each side. Memgraph and
-Neo4j Community — both running under the *same* 0.5 vCPU / 256 MB cap as
-CognoDB's `c0`, but on the same machine as the client — answered point
-lookups and 1-hop reads in 1-4ms. CognoDB, ArangoDB Oasis, and FalkorDB
-Cloud all sat in a narrow band regardless of query shape: roughly 240-270ms
-for CognoDB and Oasis, ~31ms for FalkorDB, on everything from a point
-lookup to a two-hop traversal. That flatness is the tell — for those three,
-network round-trip to the provider's region is doing most of the work in
-the number, not the query planner. If you're picking a database to make
-*queries* fast, self-hosting next to your app wins by construction; if
-you're picking a *managed* free tier, FalkorDB's ~30ms floor was the best
-of the three managed options we could complete reliably.
+Neo4j Community — both running under a 0.5 vCPU / 256 MB Docker cap, but
+on the same machine as the client — answered point lookups and 1-hop reads
+in 1-4ms. (That 256 MB cap was set to match the *assignment brief's* stated
+CognoDB spec; we later discovered CognoDB's real dashboard reports 512 MB,
+so if anything the self-hosted numbers here are a *more* resource-starved
+baseline than CognoDB itself, not an equal one — disclosed, not quietly
+fixed, since fixing it means re-running everything.) CognoDB, ArangoDB
+Oasis, and FalkorDB Cloud all sat in a narrow band regardless of query
+shape: roughly 245-310ms for CognoDB and Oasis, ~35ms for FalkorDB, on
+everything from a point lookup to a two-hop traversal. That flatness is the
+tell — for those three, network round-trip to the provider's region is
+doing most of the work in the number, not the query planner. If you're
+picking a database to make *queries* fast, self-hosting next to your app
+wins by construction; if you're picking a *managed* free tier, FalkorDB's
+~35ms floor was the best of the three managed options we could complete
+reliably.
 
 Two results don't fit the "just network latency" story and are worth
 flagging on their own. First, CognoDB's free instance didn't hold up under
 sustained load on two of the nine workloads: `shortest_path_two_people`
-completed only 2 of 100 iterations and `aggregation_spend_by_category`
-completed 23 of 100, both failing with the connection dying mid-query
+completed only 1 of 100 iterations and `aggregation_spend_by_category`
+completed 24 of 100, both failing with the connection dying mid-query
 (`SSLEOFError` / `ConnectionResetError`). The identical Cypher, on the
 identical driver, ran error-free on every other target including
 self-hosted Neo4j Community — so this reads as the free instance itself
 under load, not a query bug. Second, Memgraph — otherwise the fastest
 thing in the whole comparison — fell off a cliff on exactly the two
-multi-hop queries: `two_hop_friends_of_friends` at p50 6.2s and
-`recommendation_bought_similar` at p50 1.2s, against sub-2ms for its own
+multi-hop queries: `two_hop_friends_of_friends` at p50 12.1s and
+`recommendation_bought_similar` at p50 2.3s, against sub-4ms for its own
 point lookups and writes. The dataset's edges are generated with a
 Pareto/Zipf skew to produce hub nodes on purpose, and these are the two
 workloads that fan out through them — a plausible explanation, though we
@@ -98,7 +105,7 @@ didn't isolate it further within this benchmark's time budget.
 Load time told a different story than query latency, and this is the
 part that's easy to miss if you only look at p50s. FalkorDB had the
 snappiest per-query latency of the managed clouds but the slowest bulk
-load by far (119s, vs. CognoDB's 27s and Neo4j Community's 21s) — "fast
+load by far (231s, vs. CognoDB's 40s and Neo4j Community's 21s) — "fast
 once loaded" and "fast to get data in" are genuinely different axes, and
 a workload that reloads data often should weight the second one more than
 these headline query numbers suggest.

@@ -59,22 +59,27 @@ Per-target specs actually observed for the instances used in this run:
 
 | Target | vCPU | RAM | Disk | Notes |
 |---|---|---|---|---|
-| CognoDB Cloud `c0` | burstable 0.5 | 256 MB | 1 GB | as stated in the assignment |
+| CognoDB Cloud `c0` | burstable 0.5 | **512 MB** | 1 GB | The assignment brief states 256 MB for `c0`, but the actual dashboard for the instance used in this run (`db-5a5a43ad`, region `us-east4`) shows **"Size: c0 · 512 MB"** and "Memory: 512 MB" under Specifications -- vCPU (burst to 0.5) and Storage (1 GiB) match the brief, only RAM doesn't. Reported as measured, not assumed, per this section's own rule. **This means the self-hosted comparators below, capped to 256 MB to match the brief's stated CognoDB spec, have been running at half of CognoDB's real available memory** -- see the caveat below the table. |
 | Memgraph (self-hosted) | capped to 0.5 via `docker-compose.yml` | capped to 256 MB via `docker-compose.yml` | Docker volume, unbounded — not the constraining factor for this dataset | |
 | Neo4j Community (self-hosted) | capped to 0.5 | capped to 256 MB | Docker volume | |
 | ArangoDB Oasis free trial | **1 core** | **~1.02 GB** | not a fixed quota (see note) | Oasis doesn't publish trial specs anywhere public, and doesn't let free-trial users pick a custom small tier -- read directly off the deployment's own `/_admin/metrics` endpoint during this run: `arangodb_server_statistics_cpu_cores` = 1, `arangodb_server_statistics_physical_memory` = 1,020,054,733 bytes. Disk (`rocksdb_total_disk_space` ≈ 42 GB) is **not reported** as a spec -- that metric is scoped to the underlying shared GKE node (`machine_id=gke-dc-...-n2d-standard-...`), not a per-tenant quota Oasis documents or guarantees, so stating it as "the trial's disk allocation" would overclaim what was actually measured. |
-| FalkorDB Cloud free tier | not published | **100 MB** (in-memory; RAM is the hard cap on graph dataset size) | n/a (in-memory engine, no separate disk allocation) | Per [FalkorDB's own docs](https://docs.falkordb.com/cloud/free-tier.html): "Free Tier... 100MB of RAM (max graph dataset size)." Notably **smaller** than CognoDB's 256 MB, not equal to it -- disclosed here rather than assumed at parity, per the fairness rule this section follows. The dataset (~684 KB as CSV) still fit comfortably inside it for this run. |
+| FalkorDB Cloud free tier | not published | **100 MB** (in-memory; RAM is the hard cap on graph dataset size) | n/a (in-memory engine, no separate disk allocation) | Per [FalkorDB's own docs](https://docs.falkordb.com/cloud/free-tier.html): "Free Tier... 100MB of RAM (max graph dataset size)." Notably **smaller** than CognoDB's real 512 MB, not equal to it -- disclosed here rather than assumed at parity, per the fairness rule this section follows. The dataset (~1.1 MB as CSV) still fit comfortably inside it for this run, verified live end-to-end (zero errors across all 9 workloads at 100 iterations). |
 | *(optional)* Neo4j AuraDB Free | shared/burstable | no published vCPU/RAM figure | ~ a few hundred MB usable | not run for this submission — required billing info to provision, see "Why these four" above |
 
-**The dataset is deliberately tiny** (`data/generate_dataset.py`): 5,000
-`Person` nodes, 2,000 `Product` nodes, ~40,000 edges, ~684 KB as CSV. This
+**The dataset is deliberately small** (`data/generate_dataset.py`): 7,000
+`Person` nodes, 2,800 `Product` nodes, ~56,000 edges, ~1.1 MB as CSV. This
 is sized so it comfortably fits inside the *tightest* tier in this
-comparison -- FalkorDB's 100 MB in-memory free tier, not CognoDB's 256 MB
--- after indexing/in-memory overhead, which is the actual constraint, not
-an arbitrary round number. If you rescale `N_PERSONS`/`N_PRODUCTS` up,
-re-check against the smallest tier's limit before running, or the smallest
-instance will simply fail to load the dataset and you'll get a load-time
-failure instead of a latency number.
+comparison -- FalkorDB's 100 MB in-memory free tier, not CognoDB's -- after
+indexing/in-memory overhead, which is the actual constraint, not an
+arbitrary round number. A 2.5x scale-up over an earlier 5,000/2,000 sizing
+was tried and rejected (see the comment in `generate_dataset.py`) because it
+pinned Neo4j Community at ~100% of its memory cap and thrashed instead of
+scaling proportionally; 1.4x was verified clean end-to-end, including a live
+load-only run against the real FalkorDB free tier, before being committed
+here. If you rescale `N_PERSONS`/`N_PRODUCTS` further, re-check against the
+smallest tier's limit before running, or the smallest instance will simply
+fail to load the dataset and you'll get a load-time failure instead of a
+latency number.
 
 Where a platform's free/entry tier genuinely can't be pinned to the same
 numeric vCPU/RAM as CognoDB's `c0` (managed multi-tenant clouds mostly
@@ -84,6 +89,19 @@ advertised specs verbatim in the results table rather than assuming
 parity, and (3) size the dataset to the *most* constrained tier in the
 comparison, so no platform is disadvantaged by data volume even if its
 CPU/RAM headroom differs.
+
+**Caveat: the self-hosted Docker caps (256 MB) don't actually match
+CognoDB's real spec (512 MB).** `docker-compose.yml`'s memory limits for
+Memgraph and Neo4j Community were set to match the *assignment brief's*
+stated CognoDB spec (256 MB), not the dashboard-verified 512 MB discovered
+above -- both self-hosted comparators have been running this whole
+benchmark at half of CognoDB's actual available memory, which is a
+disadvantage in the *opposite* direction from the usual "free tier gets
+squeezed" concern: if anything, the self-hosted numbers in this benchmark
+are a *more* resource-constrained baseline than CognoDB itself, not an
+equal one. Disclosed here rather than silently corrected, since fixing it
+means re-running every self-hosted result and was not done for this
+submission -- a natural next step if more time were available.
 
 ## What's measured
 
@@ -147,107 +165,108 @@ file -- if you rerun the suite, regenerate `results/summary.md` first, then
 copy its tables back in here so the two don't drift apart.
 
 Per-workload comparison charts are in [`results/charts/`](results/charts/).
-44 of the 45 (workload x target) combinations completed with **zero errors**.
+43 of the 45 (workload x target) combinations completed with **zero errors**
+(the two exceptions are both CognoDB, both covered below).
 
 ### Load time & connection time
 
 | Target | Connect (ms) | Bulk load (s) |
 |---|---|---|
-| ArangoDB Oasis | 3302.91 | 12.58 |
-| CognoDB Cloud | 1591.04 | 27.03 |
-| FalkorDB Cloud | 694.01 | 119.18 |
-| Memgraph (self-hosted, capped) | 7.6 | 31.64 |
-| Neo4j Community (self-hosted, capped) | 130.75 | 7.73 |
+| ArangoDB Oasis | 3180.52 | 20.07 |
+| CognoDB Cloud | 1339.95 | 39.72 |
+| FalkorDB Cloud | 660.4 | 230.87 |
+| Memgraph (self-hosted, capped) | 9.83 | 66.7 |
+| Neo4j Community (self-hosted, capped) | 296.33 | 20.64 |
 
 ### aggregation_spend_by_category
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 277.602 | 351.04 | 383.432 | 3.43 |
-| CognoDB Cloud | 23 | 77 | 287.781 | 656.927 | 1329.755 | 2.81 |
-| FalkorDB Cloud | 100 | 0 | 31.265 | 33.261 | 36.11 | 31.6 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 2.63 | 4.871 | 39.575 | 226.81 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.405 | 2.758 | 25.548 | 389.38 |
+| ArangoDB Oasis | 100 | 0 | 267.599 | 352.167 | 356.382 | 3.48 |
+| CognoDB Cloud | 24 | 76 | 250.978 | 328.843 | 1298.939 | 3.07 |
+| FalkorDB Cloud | 100 | 0 | 35.816 | 37.287 | 38.116 | 27.77 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 3.243 | 5.263 | 36.051 | 205.1 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.689 | 6.706 | 65.407 | 244.48 |
 
 ### aggregation_top_products_global
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 1060.915 | 1442.248 | 1485.255 | 0.94 |
-| CognoDB Cloud | 100 | 0 | 304.621 | 372.115 | 408.743 | 3.19 |
-| FalkorDB Cloud | 100 | 0 | 41.962 | 44.817 | 47.415 | 23.63 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 4.216 | 35.469 | 43.021 | 151.87 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 6.04 | 70.603 | 83.995 | 53.31 |
+| ArangoDB Oasis | 100 | 0 | 1485.044 | 2149.922 | 3239.154 | 0.65 |
+| CognoDB Cloud | 100 | 0 | 363.667 | 454.329 | 689.114 | 2.61 |
+| FalkorDB Cloud | 100 | 0 | 49.849 | 52.349 | 56.717 | 19.86 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 5.212 | 31.682 | 43.343 | 129.72 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 18.653 | 90.677 | 251.5 | 27.13 |
 
 ### one_hop_who_they_follow
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 267.271 | 345.86 | 372.739 | 3.49 |
-| CognoDB Cloud | 100 | 0 | 241.107 | 311.366 | 341.535 | 3.92 |
-| FalkorDB Cloud | 100 | 0 | 31.207 | 32.872 | 34.712 | 31.81 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 3.069 | 6.134 | 45.202 | 202.56 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.17 | 2.778 | 64.973 | 271.87 |
+| ArangoDB Oasis | 100 | 0 | 261.381 | 352.151 | 357.806 | 3.53 |
+| CognoDB Cloud | 100 | 0 | 246.906 | 326.82 | 734.376 | 3.62 |
+| FalkorDB Cloud | 100 | 0 | 34.497 | 36.693 | 42.589 | 28.63 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 3.997 | 35.23 | 41.777 | 163.46 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.784 | 67.468 | 74.356 | 149.0 |
 
 ### point_lookup_person
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 268.183 | 349.702 | 371.336 | 3.46 |
-| CognoDB Cloud | 100 | 0 | 245.273 | 330.901 | 350.489 | 3.75 |
-| FalkorDB Cloud | 100 | 0 | 31.293 | 32.873 | 34.379 | 31.64 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 0.976 | 1.462 | 2.072 | 694.91 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.295 | 2.767 | 46.054 | 417.03 |
+| ArangoDB Oasis | 100 | 0 | 262.131 | 354.658 | 435.48 | 3.46 |
+| CognoDB Cloud | 100 | 0 | 247.342 | 309.663 | 344.591 | 3.73 |
+| FalkorDB Cloud | 100 | 0 | 34.476 | 40.118 | 41.774 | 28.34 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 1.615 | 2.109 | 2.163 | 606.47 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.943 | 57.039 | 63.645 | 171.79 |
 
 ### recommendation_bought_similar
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 268.305 | 339.341 | 351.956 | 3.5 |
-| CognoDB Cloud | 100 | 0 | 240.984 | 307.122 | 316.371 | 3.95 |
-| FalkorDB Cloud | 100 | 0 | 31.379 | 33.534 | 36.236 | 30.68 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 1099.717 | 1193.617 | 1230.565 | 0.93 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.602 | 8.588 | 68.315 | 215.48 |
+| ArangoDB Oasis | 100 | 0 | 261.965 | 346.209 | 356.106 | 3.48 |
+| CognoDB Cloud | 100 | 0 | 248.723 | 326.989 | 360.354 | 3.62 |
+| FalkorDB Cloud | 100 | 0 | 35.689 | 37.104 | 38.94 | 27.87 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 2325.457 | 2483.443 | 4612.36 | 0.42 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 2.25 | 61.903 | 70.884 | 140.14 |
 
 ### shortest_path_two_people
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 267.157 | 348.896 | 387.502 | 3.46 |
-| CognoDB Cloud | 2 | 98 | 992.09 | 1667.22 | 1727.231 | 1.01 |
-| FalkorDB Cloud | 100 | 0 | 31.545 | 35.029 | 43.884 | 30.84 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 1.623 | 4.111 | 37.279 | 315.47 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.529 | 7.498 | 66.762 | 207.29 |
+| ArangoDB Oasis | 100 | 0 | 262.21 | 344.291 | 353.097 | 3.53 |
+| CognoDB Cloud | 1 | 99 | 1499.606 | 1499.606 | 1499.606 | 0.67 |
+| FalkorDB Cloud | 100 | 0 | 36.429 | 38.761 | 81.583 | 25.05 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 1.601 | 4.171 | 25.556 | 326.91 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.661 | 10.633 | 66.874 | 220.72 |
 
 ### two_hop_friends_of_friends
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 272.313 | 346.705 | 368.067 | 3.47 |
-| CognoDB Cloud | 100 | 0 | 241.816 | 310.787 | 332.778 | 3.89 |
-| FalkorDB Cloud | 100 | 0 | 31.047 | 33.385 | 35.0 | 31.75 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 5513.804 | 5934.717 | 6034.698 | 0.18 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 2.069 | 46.945 | 76.549 | 144.58 |
+| ArangoDB Oasis | 100 | 0 | 260.934 | 335.634 | 347.576 | 3.67 |
+| CognoDB Cloud | 100 | 0 | 286.505 | 606.445 | 658.947 | 2.78 |
+| FalkorDB Cloud | 100 | 0 | 34.711 | 36.709 | 39.694 | 28.48 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 12065.222 | 12306.734 | 12410.524 | 0.09 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.924 | 38.054 | 70.191 | 165.6 |
 
 ### write_create_follow_edge
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 305.558 | 357.917 | 361.123 | 3.4 |
-| CognoDB Cloud | 100 | 0 | 249.063 | 321.521 | 355.098 | 3.8 |
-| FalkorDB Cloud | 100 | 0 | 31.811 | 35.213 | 38.092 | 30.96 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 1.712 | 2.153 | 14.829 | 444.39 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.511 | 9.038 | 48.15 | 256.62 |
+| ArangoDB Oasis | 100 | 0 | 306.509 | 359.63 | 409.204 | 3.35 |
+| CognoDB Cloud | 100 | 0 | 270.152 | 361.585 | 362.926 | 3.49 |
+| FalkorDB Cloud | 100 | 0 | 36.252 | 37.249 | 38.634 | 27.51 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 2.282 | 2.576 | 15.586 | 390.89 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 2.049 | 6.765 | 20.268 | 308.53 |
 
 ### write_create_person
 
 | Target | n | errors | p50 (ms) | p95 (ms) | p99 (ms) | throughput (qps) |
 |---|---|---|---|---|---|---|
-| ArangoDB Oasis | 100 | 0 | 304.759 | 346.029 | 360.149 | 3.4 |
-| CognoDB Cloud | 100 | 0 | 253.845 | 360.749 | 692.929 | 1.79 |
-| FalkorDB Cloud | 100 | 0 | 30.57 | 32.385 | 35.622 | 32.34 |
-| Memgraph (self-hosted, capped) | 100 | 0 | 0.471 | 0.58 | 0.675 | 2070.45 |
-| Neo4j Community (self-hosted, capped) | 100 | 0 | 1.226 | 2.432 | 53.778 | 381.89 |
+| ArangoDB Oasis | 100 | 0 | 257.427 | 357.615 | 358.946 | 3.55 |
+| CognoDB Cloud | 100 | 0 | 253.289 | 359.924 | 362.353 | 3.62 |
+| FalkorDB Cloud | 100 | 0 | 33.38 | 35.818 | 37.155 | 29.57 |
+| Memgraph (self-hosted, capped) | 100 | 0 | 0.575 | 1.069 | 3.036 | 1469.69 |
+| Neo4j Community (self-hosted, capped) | 100 | 0 | 2.287 | 54.306 | 66.773 | 156.71 |
 
 ### Analysis
 
@@ -255,7 +274,7 @@ Three things stand out enough to call out explicitly rather than let a reader
 discover them by squinting at the table:
 
 - **CognoDB's `shortest_path_two_people` and `aggregation_spend_by_category`
-  had real failures** (2/100 and 23/100 iterations succeeded, respectively)
+  had real failures** (1/100 and 24/100 iterations succeeded, respectively)
   -- the connection died mid-query with `SSLEOFError`/`ConnectionResetError`
   under sustained load. The identical Cypher runs error-free on every other
   target (including self-hosted Neo4j Community running the exact same
@@ -263,9 +282,9 @@ discover them by squinting at the table:
   than a query or client bug. This is reported as a genuine finding, not
   smoothed over: on this specific `c0` free instance, on this run, these two
   query shapes did not hold up under 100 back-to-back iterations.
-- **Memgraph's `two_hop_friends_of_friends` (p50 6.2s) and
-  `recommendation_bought_similar` (p50 1.2s) are dramatically slower than
-  its own other queries** (sub-2ms for point lookups and writes). This
+- **Memgraph's `two_hop_friends_of_friends` (p50 12.1s) and
+  `recommendation_bought_similar` (p50 2.3s) are dramatically slower than
+  its own other queries** (sub-4ms for point lookups and writes). This
   dataset's edges are generated with a Pareto/Zipf skew specifically to
   produce hub nodes (see `data/generate_dataset.py`), and these are the two
   multi-hop traversal workloads most exposed to hub fan-out. It's measured,
@@ -295,7 +314,10 @@ for the exact substitution and reasoning.
   whatever region you provision it in; client-observed latency includes
   real network RTT to that region. Run all cloud targets from the same
   client machine/network for a same-run comparison, and note your client
-  location alongside results if you publish them further.
+  location alongside results if you publish them further. Regions actually
+  used in this run, for reference: CognoDB `us-east4`; FalkorDB Cloud AWS
+  `ap-south-1`. ArangoDB Oasis's region wasn't captured from its dashboard
+  for this run.
 - **Free-tier instances can be paused, rate-limited, or subject to noisy
   neighbors** on shared infrastructure in ways a paid dedicated tier isn't.
   A single run captures one sample of that variability, not a guarantee.

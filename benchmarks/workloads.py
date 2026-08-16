@@ -27,15 +27,17 @@ import random
 
 
 def _rand_person_id(rng):
-    return {"pid": rng.randint(0, 4999)}
+    # range must match N_PERSONS - 1 in data/generate_dataset.py
+    return {"pid": rng.randint(0, 6999)}
 
 
 def _rand_product_id(rng):
-    return {"pid": rng.randint(0, 1999)}
+    # range must match N_PRODUCTS - 1 in data/generate_dataset.py
+    return {"pid": rng.randint(0, 2799)}
 
 
 def _rand_person_and_product(rng):
-    return {"pid": rng.randint(0, 4999), "prod_id": rng.randint(0, 1999)}
+    return {"pid": rng.randint(0, 6999), "prod_id": rng.randint(0, 2799)}
 
 
 def _rand_write_person(rng):
@@ -92,7 +94,7 @@ WORKLOADS = [
             "MATCH p = shortestPath((a:Person {id: $pid})-[:FOLLOWS*..6]-(b:Person {id: $prod_id}))"
             " RETURN length(p) AS hops"
         ),
-        # note: prod_id here is reused as a second person id 0-1999 range,
+        # note: prod_id here is reused as a second person id 0-2799 range,
         # kept intentionally inside the hub-heavy low-id band so a path is
         # likely to exist within the hop limit on this synthetic graph
         "params_fn": _rand_person_and_product,
