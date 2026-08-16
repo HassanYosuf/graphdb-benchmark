@@ -55,24 +55,24 @@ adding a sixth/seventh connector is additive, not a rewrite.
 
 ## Fairness & sizing
 
-Per-target advertised specs (fill in as you provision each account — see
-`results/summary.md` for the values actually used in this run):
+Per-target specs actually observed for the instances used in this run:
 
 | Target | vCPU | RAM | Disk | Notes |
 |---|---|---|---|---|
 | CognoDB Cloud `c0` | burstable 0.5 | 256 MB | 1 GB | as stated in the assignment |
 | Memgraph (self-hosted) | capped to 0.5 via `docker-compose.yml` | capped to 256 MB via `docker-compose.yml` | Docker volume, unbounded — not the constraining factor for this dataset | |
 | Neo4j Community (self-hosted) | capped to 0.5 | capped to 256 MB | Docker volume | |
-| ArangoDB Oasis free trial | trial-tier shared | trial-tier shared | trial-tier shared | Oasis doesn't let free-trial users choose a custom small tier; the smallest available trial tier is used and its actual specs are recorded in `results/summary.md` |
-| FalkorDB Cloud free tier | free-tier shared | free-tier shared | free-tier shared | specs recorded in `results/summary.md` |
+| ArangoDB Oasis free trial | **1 core** | **~1.02 GB** | not a fixed quota (see note) | Oasis doesn't publish trial specs anywhere public, and doesn't let free-trial users pick a custom small tier -- read directly off the deployment's own `/_admin/metrics` endpoint during this run: `arangodb_server_statistics_cpu_cores` = 1, `arangodb_server_statistics_physical_memory` = 1,020,054,733 bytes. Disk (`rocksdb_total_disk_space` ≈ 42 GB) is **not reported** as a spec -- that metric is scoped to the underlying shared GKE node (`machine_id=gke-dc-...-n2d-standard-...`), not a per-tenant quota Oasis documents or guarantees, so stating it as "the trial's disk allocation" would overclaim what was actually measured. |
+| FalkorDB Cloud free tier | not published | **100 MB** (in-memory; RAM is the hard cap on graph dataset size) | n/a (in-memory engine, no separate disk allocation) | Per [FalkorDB's own docs](https://docs.falkordb.com/cloud/free-tier.html): "Free Tier... 100MB of RAM (max graph dataset size)." Notably **smaller** than CognoDB's 256 MB, not equal to it -- disclosed here rather than assumed at parity, per the fairness rule this section follows. The dataset (~684 KB as CSV) still fit comfortably inside it for this run. |
 | *(optional)* Neo4j AuraDB Free | shared/burstable | no published vCPU/RAM figure | ~ a few hundred MB usable | not run for this submission — required billing info to provision, see "Why these four" above |
 
 **The dataset is deliberately tiny** (`data/generate_dataset.py`): 5,000
 `Person` nodes, 2,000 `Product` nodes, ~40,000 edges, ~684 KB as CSV. This
-is sized so it comfortably fits inside a 1 GB disk / 256 MB RAM instance
-*after* indexing overhead, which is the actual constraint — not an
-arbitrary round number. If you rescale `N_PERSONS`/`N_PRODUCTS` up, re-check
-against the smallest tier's disk limit before running, or the smallest
+is sized so it comfortably fits inside the *tightest* tier in this
+comparison -- FalkorDB's 100 MB in-memory free tier, not CognoDB's 256 MB
+-- after indexing/in-memory overhead, which is the actual constraint, not
+an arbitrary round number. If you rescale `N_PERSONS`/`N_PRODUCTS` up,
+re-check against the smallest tier's limit before running, or the smallest
 instance will simply fail to load the dataset and you'll get a load-time
 failure instead of a latency number.
 
