@@ -24,8 +24,8 @@ services:
     ports:
       - "7688:7687"
     command: ["--memory-limit=200"]  # MB, leaves headroom under the 256m container cap
-    # `deploy.resources.limits` above is a no-op under plain `docker compose
-    # up` (it only takes effect under Swarm) -- mem_limit/cpus are the
+    # mem_limit/cpus (not `deploy.resources.limits`, which is a no-op under
+    # plain `docker compose up` -- it only takes effect under Swarm) are the
     # legacy top-level fields that actually enforce the cap outside Swarm.
     mem_limit: 256m
     cpus: 0.5

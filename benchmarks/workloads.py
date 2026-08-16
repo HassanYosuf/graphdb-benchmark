@@ -17,11 +17,11 @@ Each workload is a dict:
                  warm cache pass or treat it as a write that mutates state
 
 ArangoDB (AQL) and FalkorDB (Redis protocol) cannot run these Cypher strings
-verbatim -- see benchmarks/connectors/arangodb.py and falkordb.py for the
-translated-but-semantically-equivalent versions of the SAME workloads
-(same selectivity, same result shape, same number of hops). Any deliberate
-translation choices are called out in README "Methodology > cross-language
-query parity".
+verbatim -- see benchmarks/connectors/arangodb_connector.py and
+falkordb_connector.py for the translated-but-semantically-equivalent
+versions of the SAME workloads (same selectivity, same result shape, same
+number of hops). Any deliberate translation choices are called out in
+README "Methodology > cross-language query parity".
 """
 import random
 

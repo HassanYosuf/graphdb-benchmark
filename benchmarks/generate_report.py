@@ -9,7 +9,7 @@ Reads every results/raw/*.json produced by run_benchmark.py and produces:
 Run this after run_benchmark.py has produced results for all targets you
 want compared. It intentionally does NOT compute a single "winner" score --
 different workloads matter differently depending on your access pattern,
-and collapsing six databases into one number is exactly the kind of
+and collapsing five databases into one number is exactly the kind of
 methodology shortcut this assignment asks us not to take.
 """
 import glob
