@@ -43,7 +43,7 @@ the run with no code changes, for anyone who has (or is willing to set up)
 a truly free Aura instance.
 
 Explicitly **not** included: Amazon Neptune and TigerGraph Cloud. Neither
-has a true always-free tier that fits alongside a 256 MB/1 GB instance —
+has a true always-free tier that fits alongside a 512 MB/1 GB instance —
 Neptune's smallest *serverless* configuration bills per NCU-hour with no
 perpetual free tier, and TigerGraph Cloud's free tier is a shared
 sandbox with different resource semantics than a dedicated instance.
@@ -292,8 +292,8 @@ discover them by squinting at the table:
   combination (Memgraph 2.18.1, 0.5 vCPU / 256 MB) -- not attributed to a
   cause beyond that without further isolation, which is a natural next step
   if more time were available.
-- **ArangoDB (~250-350ms) and FalkorDB (~30ms) show remarkably flat latency
-  across every workload type**, including trivial point lookups. That's
+- **ArangoDB (~255-360ms) and FalkorDB (~33-50ms) show remarkably flat
+  latency across every workload type**, including trivial point lookups. That's
   consistent with per-query latency there being dominated by client-server
   round-trip time rather than query execution cost -- worth keeping in mind
   when comparing "query cost" across targets that differ in network distance
