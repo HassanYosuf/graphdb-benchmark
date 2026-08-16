@@ -1,4 +1,4 @@
-# Graph Database Cloud Benchmark: CognoDB vs. Memgraph, Neo4j Community, ArangoDB Oasis, FalkorDB (+ optional Neo4j AuraDB)
+# Graph Database Cloud Benchmark: CognoDB vs. Memgraph, Neo4j Community, ArangoDB Oasis, FalkorDB
 
 A reproducible benchmark comparing [CognoDB Cloud](https://console.cognodb.com) against four other
 graph database options, on identical data and identical queries, under matched
