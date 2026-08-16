@@ -1,0 +1,110 @@
+{
+  "target": "cognodb",
+  "display_name": "CognoDB Cloud",
+  "timestamp_utc": "2026-08-15T12:32:02.365550+00:00",
+  "connect_time_ms": 1591.04,
+  "load_time_s": 27.03,
+  "iterations": 100,
+  "warmup": 10,
+  "workloads": {
+    "point_lookup_person": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 266.787,
+      "p50_ms": 245.273,
+      "p95_ms": 330.901,
+      "p99_ms": 350.489,
+      "min_ms": 239.58,
+      "max_ms": 378.847,
+      "throughput_qps": 3.75
+    },
+    "one_hop_who_they_follow": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 255.217,
+      "p50_ms": 241.107,
+      "p95_ms": 311.366,
+      "p99_ms": 341.535,
+      "min_ms": 239.825,
+      "max_ms": 345.64,
+      "throughput_qps": 3.92
+    },
+    "two_hop_friends_of_friends": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 257.189,
+      "p50_ms": 241.816,
+      "p95_ms": 310.787,
+      "p99_ms": 332.778,
+      "min_ms": 239.039,
+      "max_ms": 353.228,
+      "throughput_qps": 3.89
+    },
+    "recommendation_bought_similar": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 253.229,
+      "p50_ms": 240.984,
+      "p95_ms": 307.122,
+      "p99_ms": 316.371,
+      "min_ms": 239.15,
+      "max_ms": 352.329,
+      "throughput_qps": 3.95
+    },
+    "shortest_path_two_people": {
+      "n": 2,
+      "errors": 98,
+      "mean_ms": 992.09,
+      "p50_ms": 992.09,
+      "p95_ms": 1667.22,
+      "p99_ms": 1727.231,
+      "min_ms": 241.946,
+      "max_ms": 1742.234,
+      "throughput_qps": 1.01
+    },
+    "aggregation_spend_by_category": {
+      "n": 23,
+      "errors": 77,
+      "mean_ms": 356.061,
+      "p50_ms": 287.781,
+      "p95_ms": 656.927,
+      "p99_ms": 1329.755,
+      "min_ms": 246.003,
+      "max_ms": 1510.312,
+      "throughput_qps": 2.81
+    },
+    "aggregation_top_products_global": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 313.818,
+      "p50_ms": 304.621,
+      "p95_ms": 372.115,
+      "p99_ms": 408.743,
+      "min_ms": 289.091,
+      "max_ms": 408.902,
+      "throughput_qps": 3.19
+    },
+    "write_create_person": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 559.477,
+      "p50_ms": 253.845,
+      "p95_ms": 360.749,
+      "p99_ms": 692.929,
+      "min_ms": 246.691,
+      "max_ms": 28656.123,
+      "throughput_qps": 1.79
+    },
+    "write_create_follow_edge": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 263.322,
+      "p50_ms": 249.063,
+      "p95_ms": 321.521,
+      "p99_ms": 355.098,
+      "min_ms": 246.556,
+      "max_ms": 440.041,
+      "throughput_qps": 3.8
+    }
+  }
+}

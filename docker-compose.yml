@@ -1,0 +1,59 @@
+# docker-compose.yml
+#
+# Self-hosted comparators, resource-capped to CognoDB's advertised free-tier
+# specs (burstable 0.5 vCPU / 256 MB RAM / 1 GB disk) via Docker's cpus/mem
+# limits -- this is the "fairness: same resources everywhere" requirement
+# applied to the two databases that don't offer a managed free tier we can
+# point at directly.
+#
+# Caveat disclosed in README: Docker's --cpus is a scheduling quota, not a
+# guarantee of the same silicon CognoDB/Aura run on, and container RAM
+# limits behave differently from a cloud VM's memory cgroup under real
+# managed-service multi-tenancy. Treat these two as a "known, controlled
+# local baseline" rather than a perfect stand-in for a hosted free tier.
+#
+# Usage:
+#   docker compose up -d memgraph neo4j-community
+#   docker compose logs -f            # watch startup
+#   docker compose down -v            # tear down + wipe volumes between runs
+
+services:
+  memgraph:
+    image: memgraph/memgraph:2.18.1
+    container_name: bench-memgraph
+    ports:
+      - "7688:7687"
+    command: ["--memory-limit=200"]  # MB, leaves headroom under the 256m container cap
+    # `deploy.resources.limits` above is a no-op under plain `docker compose
+    # up` (it only takes effect under Swarm) -- mem_limit/cpus are the
+    # legacy top-level fields that actually enforce the cap outside Swarm.
+    mem_limit: 256m
+    cpus: 0.5
+    volumes:
+      - memgraph_data:/var/lib/memgraph
+
+  neo4j-community:
+    image: neo4j:5.23-community
+    container_name: bench-neo4j-community
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    environment:
+      - NEO4J_AUTH=neo4j/benchmarkpass123
+      # Originally 200m heap + 32m pagecache (232m of 256m) -- OOM-killed
+      # (exit 137, confirmed via `docker inspect`) mid-run twice under real
+      # write load: JVM metaspace/thread stacks/GC bookkeeping need real
+      # headroom beyond the configured heap+pagecache, and 24MB wasn't
+      # enough. Lowered to leave the JVM ~100MB of headroom inside the same
+      # 256MB container cap.
+      - NEO4J_server_memory_heap_max__size=128m
+      - NEO4J_server_memory_pagecache_size=16m
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    mem_limit: 256m
+    cpus: 0.5
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  memgraph_data:
+  neo4j_data:

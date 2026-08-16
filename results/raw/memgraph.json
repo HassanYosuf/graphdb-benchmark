@@ -1,0 +1,110 @@
+{
+  "target": "memgraph",
+  "display_name": "Memgraph (self-hosted, capped)",
+  "timestamp_utc": "2026-08-16T09:00:42.819757+00:00",
+  "connect_time_ms": 7.6,
+  "load_time_s": 31.64,
+  "iterations": 100,
+  "warmup": 10,
+  "workloads": {
+    "point_lookup_person": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 1.439,
+      "p50_ms": 0.976,
+      "p95_ms": 1.462,
+      "p99_ms": 2.072,
+      "min_ms": 0.704,
+      "max_ms": 42.358,
+      "throughput_qps": 694.91
+    },
+    "one_hop_who_they_follow": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 4.937,
+      "p50_ms": 3.069,
+      "p95_ms": 6.134,
+      "p99_ms": 45.202,
+      "min_ms": 2.119,
+      "max_ms": 47.048,
+      "throughput_qps": 202.56
+    },
+    "two_hop_friends_of_friends": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 5414.844,
+      "p50_ms": 5513.804,
+      "p95_ms": 5934.717,
+      "p99_ms": 6034.698,
+      "min_ms": 4294.7,
+      "max_ms": 6102.388,
+      "throughput_qps": 0.18
+    },
+    "recommendation_bought_similar": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 1075.13,
+      "p50_ms": 1099.717,
+      "p95_ms": 1193.617,
+      "p99_ms": 1230.565,
+      "min_ms": 811.641,
+      "max_ms": 1480.799,
+      "throughput_qps": 0.93
+    },
+    "shortest_path_two_people": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 3.17,
+      "p50_ms": 1.623,
+      "p95_ms": 4.111,
+      "p99_ms": 37.279,
+      "min_ms": 0.856,
+      "max_ms": 40.746,
+      "throughput_qps": 315.47
+    },
+    "aggregation_spend_by_category": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 4.409,
+      "p50_ms": 2.63,
+      "p95_ms": 4.871,
+      "p99_ms": 39.575,
+      "min_ms": 2.186,
+      "max_ms": 40.163,
+      "throughput_qps": 226.81
+    },
+    "aggregation_top_products_global": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 6.585,
+      "p50_ms": 4.216,
+      "p95_ms": 35.469,
+      "p99_ms": 43.021,
+      "min_ms": 3.4,
+      "max_ms": 45.065,
+      "throughput_qps": 151.87
+    },
+    "write_create_person": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 0.483,
+      "p50_ms": 0.471,
+      "p95_ms": 0.58,
+      "p99_ms": 0.675,
+      "min_ms": 0.421,
+      "max_ms": 0.782,
+      "throughput_qps": 2070.45
+    },
+    "write_create_follow_edge": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 2.25,
+      "p50_ms": 1.712,
+      "p95_ms": 2.153,
+      "p99_ms": 14.829,
+      "min_ms": 1.492,
+      "max_ms": 38.868,
+      "throughput_qps": 444.39
+    }
+  }
+}

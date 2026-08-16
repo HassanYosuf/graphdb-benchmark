@@ -1,0 +1,110 @@
+{
+  "target": "neo4j_community",
+  "display_name": "Neo4j Community (self-hosted, capped)",
+  "timestamp_utc": "2026-08-16T09:01:05.053302+00:00",
+  "connect_time_ms": 130.75,
+  "load_time_s": 7.73,
+  "iterations": 100,
+  "warmup": 10,
+  "workloads": {
+    "point_lookup_person": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 2.398,
+      "p50_ms": 1.295,
+      "p95_ms": 2.767,
+      "p99_ms": 46.054,
+      "min_ms": 0.796,
+      "max_ms": 53.381,
+      "throughput_qps": 417.03
+    },
+    "one_hop_who_they_follow": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 3.678,
+      "p50_ms": 1.17,
+      "p95_ms": 2.778,
+      "p99_ms": 64.973,
+      "min_ms": 0.74,
+      "max_ms": 78.612,
+      "throughput_qps": 271.87
+    },
+    "two_hop_friends_of_friends": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 6.917,
+      "p50_ms": 2.069,
+      "p95_ms": 46.945,
+      "p99_ms": 76.549,
+      "min_ms": 0.886,
+      "max_ms": 80.69,
+      "throughput_qps": 144.58
+    },
+    "recommendation_bought_similar": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 4.641,
+      "p50_ms": 1.602,
+      "p95_ms": 8.588,
+      "p99_ms": 68.315,
+      "min_ms": 0.72,
+      "max_ms": 71.354,
+      "throughput_qps": 215.48
+    },
+    "shortest_path_two_people": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 4.824,
+      "p50_ms": 1.529,
+      "p95_ms": 7.498,
+      "p99_ms": 66.762,
+      "min_ms": 0.807,
+      "max_ms": 70.842,
+      "throughput_qps": 207.29
+    },
+    "aggregation_spend_by_category": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 2.568,
+      "p50_ms": 1.405,
+      "p95_ms": 2.758,
+      "p99_ms": 25.548,
+      "min_ms": 0.629,
+      "max_ms": 70.975,
+      "throughput_qps": 389.38
+    },
+    "aggregation_top_products_global": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 18.757,
+      "p50_ms": 6.04,
+      "p95_ms": 70.603,
+      "p99_ms": 83.995,
+      "min_ms": 3.995,
+      "max_ms": 371.567,
+      "throughput_qps": 53.31
+    },
+    "write_create_person": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 2.619,
+      "p50_ms": 1.226,
+      "p95_ms": 2.432,
+      "p99_ms": 53.778,
+      "min_ms": 0.786,
+      "max_ms": 61.387,
+      "throughput_qps": 381.89
+    },
+    "write_create_follow_edge": {
+      "n": 100,
+      "errors": 0,
+      "mean_ms": 3.897,
+      "p50_ms": 1.511,
+      "p95_ms": 9.038,
+      "p99_ms": 48.15,
+      "min_ms": 0.911,
+      "max_ms": 52.773,
+      "throughput_qps": 256.62
+    }
+  }
+}

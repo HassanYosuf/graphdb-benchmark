@@ -1,0 +1,55 @@
+name: CI
+
+# This workflow validates the parts of the benchmark suite that don't need
+# live cloud credentials: the code compiles, the dataset generator produces
+# a deterministic dataset, and the report generator correctly turns raw
+# JSON into a summary + charts. It deliberately does NOT try to run the
+# actual cloud benchmarks in CI -- those need per-vendor secrets tied to a
+# free-tier account, which shouldn't live in a public repo's Actions
+# secrets. See README "Reproducing this benchmark" for the manual steps.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Compile-check all Python
+        run: python -m py_compile $(find . -name "*.py" -not -path "./.venv/*")
+      - name: Generate dataset (determinism check)
+        run: |
+          python data/generate_dataset.py
+          test -f data/dataset/persons.csv
+          test "$(wc -l < data/dataset/persons.csv)" -eq 5001
+      - name: Report generator smoke test (with synthetic results)
+        run: |
+          mkdir -p results/raw
+          python - <<'EOF'
+          import json
+          data = {
+              "target": "smoke_test", "display_name": "Smoke Test DB",
+              "timestamp_utc": "2026-01-01T00:00:00Z",
+              "connect_time_ms": 10.0, "load_time_s": 1.0,
+              "iterations": 10, "warmup": 1,
+              "workloads": {
+                  "point_lookup_person": {
+                      "n": 10, "errors": 0, "mean_ms": 2.0, "p50_ms": 2.0,
+                      "p95_ms": 3.0, "p99_ms": 4.0, "min_ms": 1.0, "max_ms": 5.0,
+                      "throughput_qps": 500.0
+                  }
+              }
+          }
+          with open("results/raw/_ci_smoke_test.json", "w") as f:
+              json.dump(data, f)
+          EOF
+          python -m benchmarks.generate_report
+          test -f results/summary.md
+          rm results/raw/_ci_smoke_test.json

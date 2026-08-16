@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+
+# NOTE: results/raw/*.json and results/charts/*.png are intentionally NOT
+# ignored -- the actual benchmark output is part of the deliverable and
+# should be committed so results are reproducible and reviewable without
+# re-running the suite.
+
